@@ -1,0 +1,75 @@
+version: '2'
+# docker-compose -f docker-compose.dev.yml up
+
+
+services:
+  ctfd_llmv:
+    # LLMV: Change Dockerfile to development version.
+    container_name: ctfd_llmv
+    build:
+      context: ../
+      dockerfile: development_helpers/Dockerfile.dev
+    user: root
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - UPLOAD_FOLDER=/var/uploads
+      - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
+      - REDIS_URL=redis://cache:6379
+      - WORKERS=1
+      - LOG_FOLDER=/var/log/CTFd
+      - ACCESS_LOG=-
+      - ERROR_LOG=-
+      - REVERSE_PROXY=true
+      - DEFAULT_THEME=aiv-beta
+    volumes:
+      - ../.data/CTFd/logs:/var/log/CTFd
+      - ../.data/CTFd/uploads:/var/uploads
+      - ../aiv-beta:/opt/CTFd/CTFd/themes/aiv-beta:ro
+    depends_on:
+      - db
+      - cache
+    networks:
+        default:
+        internal:
+
+  db:
+    image: mariadb:10.4.12
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=ctfd
+      - MYSQL_USER=ctfd
+      - MYSQL_PASSWORD=ctfd
+      - MYSQL_DATABASE=ctfd
+    volumes:
+      - ../.data/mysql:/var/lib/mysql
+    networks:
+        internal:
+    # This command is required to set important mariadb defaults
+    command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u $$MYSQL_USER --password=$$MYSQL_PASSWORD
+      start_period: 1s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+
+  cache:
+    image: redis:4
+    restart: always
+    volumes:
+    - ../.data/redis:/data
+    networks:
+        internal:
+    healthcheck:
+      test: ["CMD", "redis-cli","ping"]
+      start_period: 1s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+
+networks:
+    default:
+    internal:
+        internal: true

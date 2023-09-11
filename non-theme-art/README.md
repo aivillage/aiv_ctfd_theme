@@ -1,0 +1,1 @@
+This art is uploaded at CTF creation time.

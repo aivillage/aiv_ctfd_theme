@@ -1,0 +1,15 @@
+# docker compose -f development_helpers/docker-compose.dev.yml build --progress=plain
+FROM ctfd/ctfd:3.6.0
+
+COPY ../development_helpers /opt/CTFd/development_helpers
+
+USER root
+
+RUN chmod +x /opt/CTFd/development_helpers/docker-entrypoint.dev.sh
+RUN chown 1001:1001 /opt/CTFd/development_helpers/docker-entrypoint.dev.sh
+
+USER 1001
+EXPOSE 8000
+
+# LLMV: Modified entrypoint to use development entrypoint.
+ENTRYPOINT ["/opt/CTFd/development_helpers/docker-entrypoint.dev.sh"]
